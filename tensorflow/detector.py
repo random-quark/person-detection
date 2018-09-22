@@ -8,6 +8,8 @@ import cv2
 import time
 import math
 
+import pdb
+
 
 class DetectorAPI:
     def __init__(self, path_to_ckpt, threshold):
@@ -45,13 +47,24 @@ class DetectorAPI:
         # loop people
             # if not found, decrement life by 1 and leave coords alone
 
+        # (person) for person in self.people if (person["centroid"].x == x)
+        # result for var in list if condition
+
         for new_person in new_people:
-            x, y = new_person.centroid
-            matches = [person for person in self.people if math.hypot(
-                person.x - x, person.y, y)]
+            x, y = new_person["centroid"]
+            print("existing people: {}", self.people)
+            matches = [(i) for i, person in enumerate(self.people) if math.hypot(
+                person["centroid"][0] - x, person["centroid"][1] - y) < 50]
+
             print(matches)
-            if not matches:
-                self.people.add(new_person)
+
+            if matches:
+                self.people[matches[0]] = {
+                    "centroid": new_person["centroid"]
+                }
+            else:
+                print("no matches, add")
+                self.people.append({"centroid": (x, y)})
 
         return
 
@@ -92,6 +105,8 @@ class DetectorAPI:
             }
 
             detections.append(detection)
+
+        self.track_people(detections)
 
         # TODO select a random person on timer
         # TODO return coords of the selected person

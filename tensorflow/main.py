@@ -11,7 +11,6 @@ from pythonosc import udp_client
 def visualise(img, people):
     for person in people:
         box = person["image_scaled_box"]
-        print(box)
         cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), 2)
         cv2.circle(img, person["image_scaled_centroid"], 10, (0, 255, 0), -1)
 

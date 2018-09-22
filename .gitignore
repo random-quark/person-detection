@@ -3,6 +3,7 @@ sample_videos/*
 .vscode
 .DS_Store
 *.pb
+model.**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

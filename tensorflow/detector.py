@@ -12,6 +12,8 @@ import pickle
 
 global data
 
+starting_health = 5
+
 # def exit_handler():
 #     with open('data_cache.pickle', 'wb') as file:
 #         pickle.dump(data, file)
@@ -29,13 +31,13 @@ class DetectorAPI:
     def mockDetection(self, frameIndex):
         return self.data[frameIndex]
 
-    def __init__(self, path_to_ckpt, threshold, tracking_distance):
+    def __init__(self, path_to_ckpt, threshold, tracking_distance, skip_frames):
         self.data = load()  # get dummy data
-        print("DATA LOADED")
 
         self.people = []
-        self.selected_person = None
         self.tracking_distance = tracking_distance
+        self.skip_frames = skip_frames
+        self.hold_frames = hold_frames
 
         self.threshold = threshold
         self.detection_graph = tf.Graph()
@@ -81,13 +83,13 @@ class DetectorAPI:
                 self.people[matches[0]
                             ]["image_scaled_centroid"] = new_person["image_scaled_centroid"]
             else:
+                new_person["health"] = starting_health
                 self.people.append(new_person)
 
         return
 
     def processFrame(self, image, frame=0):
-        image_np_expanded = np.expand_dims(image, axis=0)
-
+        # image_np_expanded = np.expand_dims(image, axis=0)
         # (boxes, scores, classes, num) = self.sess.run(
         #     [self.detection_boxes, self.detection_scores,
         #         self.detection_classes, self.num_detections],

@@ -9,10 +9,14 @@ from pythonosc import udp_client
 
 
 def visualise(img, people):
-    for person in people:
+    for index, person in enumerate(people, 1):
         box = person["image_scaled_box"]
         cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), 2)
         cv2.circle(img, person["image_scaled_centroid"], 10, (0, 255, 0), -1)
+        textCoords = tuple(
+            [pos - 10 for pos in person["image_scaled_centroid"]])
+        cv2.putText(img, str(index), (textCoords),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), )
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -24,7 +28,8 @@ def visualise(img, people):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video", default="../sample_videos/park_day.mp4")
+    parser.add_argument(
+        "--video", default="../sample_videos/park_day_short.mov")
     parser.add_argument(
         "--model", default="./faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb")
     parser.add_argument("--threshold", default=0.7)
@@ -35,14 +40,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = udp_client.SimpleUDPClient(args.ip, args.port)
-    odapi = DetectorAPI(path_to_ckpt=args.model, threshold=args.threshold)
+    odapi = DetectorAPI(path_to_ckpt=args.model,
+                        threshold=args.threshold, tracking_distance=5)
     capture = cv2.VideoCapture(args.video)
 
     while True:
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))
+        frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))
 
-        detections = odapi.processFrame(img)
+        detections = odapi.processFrame(img, frame_number)
 
         for detection in detections:
             client.send_message("/person/horizontal", detection["centroid"][0])

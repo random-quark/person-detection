@@ -7,14 +7,35 @@ import tensorflow as tf
 import cv2
 import time
 import math
+import atexit
+import pickle
 
-import pdb
+global data
+
+# def exit_handler():
+#     with open('data_cache.pickle', 'wb') as file:
+#         pickle.dump(data, file)
+
+
+# atexit.register(exit_handler)
+
+
+def load():
+    with open('data_cache.pickle', 'rb') as file:
+        return pickle.load(file)
 
 
 class DetectorAPI:
-    def __init__(self, path_to_ckpt, threshold):
+    def mockDetection(self, frameIndex):
+        return self.data[frameIndex]
+
+    def __init__(self, path_to_ckpt, threshold, tracking_distance):
+        self.data = load()  # get dummy data
+        print("DATA LOADED")
+
         self.people = []
         self.selected_person = None
+        self.tracking_distance = tracking_distance
 
         self.threshold = threshold
         self.detection_graph = tf.Graph()
@@ -40,41 +61,37 @@ class DetectorAPI:
             'num_detections:0')
 
     def track_people(self, new_people):
-        # loop new people
-            # check if centroid of new person is within 50px of old person
-            # if yes, replace. mark person as found
-            # if no, add to end of list as found
-        # loop people
-            # if not found, decrement life by 1 and leave coords alone
-
-        # (person) for person in self.people if (person["centroid"].x == x)
-        # result for var in list if condition
+        # maintain lifespan
+        # remove dead people
 
         for new_person in new_people:
             x, y = new_person["centroid"]
-            print("existing people: {}", self.people)
-            matches = [(i) for i, person in enumerate(self.people) if math.hypot(
-                person["centroid"][0] - x, person["centroid"][1] - y) < 50]
 
-            print(matches)
+            # [print("DIST FROM EXISTING: ", math.hypot(
+            #     person["centroid"][0] - x, person["centroid"][1] - y)) for person in self.people]
+
+            matches = [(i) for i, person in enumerate(self.people) if math.hypot(
+                person["centroid"][0] - x, person["centroid"][1] - y) < self.tracking_distance]
 
             if matches:
-                self.people[matches[0]] = {
-                    "centroid": new_person["centroid"]
-                }
+                self.people[matches[0]]["centroid"]: new_person["centroid"]
             else:
-                print("no matches, add")
-                self.people.append({"centroid": (x, y)})
+                self.people.append(new_person)
 
         return
 
-    def processFrame(self, image):
+    def processFrame(self, image, frame=0):
         image_np_expanded = np.expand_dims(image, axis=0)
 
-        (boxes, scores, classes, num) = self.sess.run(
-            [self.detection_boxes, self.detection_scores,
-                self.detection_classes, self.num_detections],
-            feed_dict={self.image_tensor: image_np_expanded})
+        # (boxes, scores, classes, num) = self.sess.run(
+        #     [self.detection_boxes, self.detection_scores,
+        #         self.detection_classes, self.num_detections],
+        #     feed_dict={self.image_tensor: image_np_expanded})
+        # data.append((boxes, scores, classes, num))  # collect data
+
+        print(len(self.data))
+        (boxes, scores, classes, num) = self.mockDetection(
+            frame)  # fast for testing
 
         im_height, im_width, _ = image.shape
 
@@ -99,8 +116,8 @@ class DetectorAPI:
                 continue
 
             detection = {
-                "image_scaled_box": [int(x) for x in (pt2scaled, pt1scaled, pt4scaled, pt3scaled)],
                 "centroid": (int(centroid[0] * 100), int(centroid[1] * 100)),
+                "image_scaled_box": [int(x) for x in (pt2scaled, pt1scaled, pt4scaled, pt3scaled)],
                 "image_scaled_centroid": (int(centroid[0] * im_width), int(centroid[1] * im_height))
             }
 
@@ -111,7 +128,7 @@ class DetectorAPI:
         # TODO select a random person on timer
         # TODO return coords of the selected person
 
-        return detections
+        return self.people
 
     def close(self):
         self.sess.close()

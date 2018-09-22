@@ -12,8 +12,6 @@ import pickle
 
 global data
 
-starting_health = 5
-
 # def exit_handler():
 #     with open('data_cache.pickle', 'wb') as file:
 #         pickle.dump(data, file)
@@ -31,13 +29,16 @@ class DetectorAPI:
     def mockDetection(self, frameIndex):
         return self.data[frameIndex]
 
-    def __init__(self, path_to_ckpt, threshold, tracking_distance, skip_frames):
+    def __init__(self, path_to_ckpt, threshold, allowed_movement_per_frame, allowed_tracking_loss_frames):
         self.data = load()  # get dummy data
 
-        self.people = []
-        self.tracking_distance = tracking_distance
-        self.skip_frames = skip_frames
-        self.hold_frames = hold_frames
+        self.names_source = ["Tom", "Simon", "Leslie", "John",
+                             "Peter", "Ruby", "Sioban", "Ella", "Jane"]
+        self.names = self.names_source.copy()
+
+        self.people = {}
+        self.allowed_movement_per_frame = allowed_movement_per_frame
+        self.allowed_tracking_loss_frames = allowed_tracking_loss_frames
 
         self.threshold = threshold
         self.detection_graph = tf.Graph()
@@ -62,29 +63,40 @@ class DetectorAPI:
         self.num_detections = self.detection_graph.get_tensor_by_name(
             'num_detections:0')
 
-    def track_people(self, new_people):
-        # maintain lifespan
-        # remove dead people
+    def track_people(self, detections):
+        # FIXME break up into smaller functions
+        for detection in detections:
+            x, y = detection["centroid"]
 
-        for new_person in new_people:
-            x, y = new_person["centroid"]
+            matches = [key for key, person in self.people.items() if math.hypot(
+                person["centroid"][0] - x, person["centroid"][1] - y) < self.allowed_movement_per_frame]
+            distances = [math.hypot(self.people[name]["centroid"][0] - x,
+                                    self.people[name]["centroid"][0] - y) for name in matches]
 
-            [print("DIST FROM EXISTING: ", math.hypot(
-                person["centroid"][0] - x, person["centroid"][1] - y)) for person in self.people if math.hypot(
-                person["centroid"][0] - x, person["centroid"][1] - y) < self.tracking_distance]
-
-            matches = [(i) for i, person in enumerate(self.people) if math.hypot(
-                person["centroid"][0] - x, person["centroid"][1] - y) < self.tracking_distance]
+            matches = [match for _, match in sorted(
+                zip(distances, matches))]  # sort by closest existing match
 
             if matches:
-                self.people[matches[0]]["centroid"] = new_person["centroid"]
+                self.people[matches[0]]["centroid"] = detection["centroid"]
                 self.people[matches[0]
-                            ]["image_scaled_box"] = new_person["image_scaled_box"]
+                            ]["image_scaled_box"] = detection["image_scaled_box"]
                 self.people[matches[0]
-                            ]["image_scaled_centroid"] = new_person["image_scaled_centroid"]
+                            ]["image_scaled_centroid"] = detection["image_scaled_centroid"]
+                self.people[matches[0]
+                            ]["health"] = self.allowed_tracking_loss_frames
             else:
-                new_person["health"] = starting_health
-                self.people.append(new_person)
+                detection["health"] = self.allowed_tracking_loss_frames
+                # FIXME: better solution for infinite source of names. counter?
+                if not self.names:
+                    self.names = self.names_source.copy()
+                self.people[self.names.pop()] = detection.copy()
+
+        for person in self.people.values():
+            person["health"] -= 1
+        remove = [k for k, person in self.people.items()
+                  if person["health"] <= 1]
+        for k in remove:
+            del self.people[k]
 
         return
 

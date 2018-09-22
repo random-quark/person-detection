@@ -3,20 +3,22 @@ import argparse
 import numpy as np
 import tensorflow as tf
 import cv2
+import random
 from detector import DetectorAPI
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
 
 def visualise(img, people):
-    for index, person in enumerate(people, 1):
+    for name, person in people.items():
         box = person["image_scaled_box"]
-        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 0, 0), 2)
-        cv2.circle(img, person["image_scaled_centroid"], 10, (0, 255, 0), -1)
+        color = (0, 0, 255) if person.get("selected") else (0, 255, 0)
+        cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), color, 2)
+        cv2.circle(img, person["image_scaled_centroid"], 10, color, -1)
         textCoords = tuple(
             [pos - 10 for pos in person["image_scaled_centroid"]])
-        cv2.putText(img, str(index), (textCoords),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), )
+        cv2.putText(img, name, (textCoords),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, )
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -24,6 +26,28 @@ def visualise(img, people):
     key = cv2.waitKey(1)
     if key & 0xFF == ord('q'):
         return
+
+
+# FIXME uses the name to identify people which is eventually recycled - use a unique ID?
+class PersonFinder:
+    def __init__(self):
+        self.track_for_frames = 50
+        self.selected_person = None
+        self.ttl = self.track_for_frames
+
+    def select(self, people):
+        self.selected_person = random.choice(list(people.keys()))
+        self.ttl = self.track_for_frames
+        return self.selected_person
+
+    def get(self, people):
+        print(not self.selected_person,
+              self.selected_person not in people, self.ttl <= 0)
+        if not self.selected_person or self.selected_person not in people or self.ttl <= 0:
+            return self.select(people)
+        else:
+            self.ttl -= 1
+            return self.selected_person
 
 
 if __name__ == "__main__":
@@ -41,18 +65,25 @@ if __name__ == "__main__":
 
     client = udp_client.SimpleUDPClient(args.ip, args.port)
     odapi = DetectorAPI(path_to_ckpt=args.model,
-                        threshold=args.threshold, tracking_distance=3)
+                        threshold=args.threshold, allowed_movement_per_frame=5, allowed_tracking_loss_frames=10)
     capture = cv2.VideoCapture(args.video)
+    person_finder = PersonFinder()
 
     while True:
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))
         frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))
 
-        detections = odapi.processFrame(img, frame_number)
+        people = odapi.processFrame(img, frame_number)
+        selected_person_name = person_finder.get(people)
 
-        for detection in detections:
-            client.send_message("/person/horizontal", detection["centroid"][0])
-            client.send_message("/person/vertical", detection["centroid"][1])
+        for person in people.values():
+            client.send_message("/person/horizontal", person["centroid"][0])
+            client.send_message("/person/vertical", person["centroid"][1])
 
-        visualise(img, detections)
+# FIXME: storing this on the object is bad because it mutates the objects passed by detection
+# FIXME write more functionally... or work out how to pass things around
+        for key, person in people.items():
+            person["selected"] = key == selected_person_name
+
+        visualise(img, people)

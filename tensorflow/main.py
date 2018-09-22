@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--video", default="../sample_videos/park_day_short.mov")
     parser.add_argument(
-        "--model", default="./faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb")
+        "--model", default="./models/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb")
     parser.add_argument("--threshold", default=0.7)
     parser.add_argument("--ip", default="192.168.1.108",
                         help="The ip of the OSC server")

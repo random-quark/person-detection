@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     client = udp_client.SimpleUDPClient(args.ip, args.port)
     odapi = DetectorAPI(path_to_ckpt=args.model,
-                        threshold=args.threshold, tracking_distance=5)
+                        threshold=args.threshold, tracking_distance=3)
     capture = cv2.VideoCapture(args.video)
 
     while True:
@@ -54,10 +54,5 @@ if __name__ == "__main__":
         for detection in detections:
             client.send_message("/person/horizontal", detection["centroid"][0])
             client.send_message("/person/vertical", detection["centroid"][1])
-
-        cv2.imshow("preview", img)
-        key = cv2.waitKey(1)
-        if key & 0xFF == ord('q'):
-            break
 
         visualise(img, detections)

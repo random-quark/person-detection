@@ -67,14 +67,19 @@ class DetectorAPI:
         for new_person in new_people:
             x, y = new_person["centroid"]
 
-            # [print("DIST FROM EXISTING: ", math.hypot(
-            #     person["centroid"][0] - x, person["centroid"][1] - y)) for person in self.people]
+            [print("DIST FROM EXISTING: ", math.hypot(
+                person["centroid"][0] - x, person["centroid"][1] - y)) for person in self.people if math.hypot(
+                person["centroid"][0] - x, person["centroid"][1] - y) < self.tracking_distance]
 
             matches = [(i) for i, person in enumerate(self.people) if math.hypot(
                 person["centroid"][0] - x, person["centroid"][1] - y) < self.tracking_distance]
 
             if matches:
-                self.people[matches[0]]["centroid"]: new_person["centroid"]
+                self.people[matches[0]]["centroid"] = new_person["centroid"]
+                self.people[matches[0]
+                            ]["image_scaled_box"] = new_person["image_scaled_box"]
+                self.people[matches[0]
+                            ]["image_scaled_centroid"] = new_person["image_scaled_centroid"]
             else:
                 self.people.append(new_person)
 
@@ -89,7 +94,6 @@ class DetectorAPI:
         #     feed_dict={self.image_tensor: image_np_expanded})
         # data.append((boxes, scores, classes, num))  # collect data
 
-        print(len(self.data))
         (boxes, scores, classes, num) = self.mockDetection(
             frame)  # fast for testing
 

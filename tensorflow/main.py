@@ -40,30 +40,24 @@ def visualise(img, people, scores, selected_person_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--video", default="../sample_videos/park_day_short.mov")
-    parser.add_argument(
-        "--model", default="./models/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb")
-    parser.add_argument("--threshold", default=0.7)
-    parser.add_argument("--ip", default="192.168.1.108",
-                        help="The ip of the OSC server")
-    parser.add_argument("--port", type=int, default=8060,
-                        help="The port the OSC server is listening on")
-    args = parser.parse_args()
+    client = udp_client.SimpleUDPClient(
+        config["osc_server_ip"], config["osc_server_port"])
+    odapi = DetectorAPI(relative_path_to_ckpt=config["model_path"])
 
-    client = udp_client.SimpleUDPClient(args.ip, args.port)
-    odapi = DetectorAPI(relative_path_to_ckpt=args.model)
+    # dirname = os.path.dirname(__file__)
+    # video_path = os.path.join(dirname, args.video)
 
-    dirname = os.path.dirname(__file__)
-    video_path = os.path.join(dirname, args.video)
-    capture = cv2.VideoCapture(video_path)
+    capture = cv2.VideoCapture(config["video_source"])
     person_finder = PersonFinder()
     activity = Activity()
 
     last_activity_score_send_time = time.time()
 
     while True:
+        if not capture.isOpened():
+            print("ERROR: camera or video selected not available")
+            continue
+
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))
         frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))

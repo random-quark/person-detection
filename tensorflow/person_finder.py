@@ -2,8 +2,6 @@ import random
 from activity import Activity
 from config import config
 
-# FIXME uses the name to identify people which is eventually recycled - use a unique ID?
-
 
 class PersonFinder:
     def __init__(self):

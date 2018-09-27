@@ -1,8 +1,21 @@
 config = {
+    # PER MACHINE
+    # where the video input comes from. change to video file for debugging
+    "video_source": "../sample_videos/park_day_short.mov",
+    # "video_source": "camera",
+
+    # where the model is stored for the algorithm. DO NOT CHANGE UNLESS CHANGING MODEL
+    "model_path": "./models/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb",
+
+    # receiving OSC server IP address
+    "osc_server_ip": "192.168.1.108",
+    "osc_server_port": 8060,
+
+    #  DETECTION STUFF
     # range: 0-1. The confidence of the detection algorithm that the detection is a person
     "threshold": 0.7,
 
-    # the percerntage of vertical or horizontal screenspace a person's centroid can move in 1 frame before they become a new person
+    # the percentage of vertical or horizontal screenspace a person's centroid can move in 1 frame before they become a new person
     "allowed_movement_per_frame": 5,
 
     # the number of frames that a person can not be detected for before they are deleted from the list

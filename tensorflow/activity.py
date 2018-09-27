@@ -30,6 +30,7 @@ class Activity():
             getattr(self, name)[data_type].append(data)
 
         def get_history(self, name, data_type, distance):
+            print(type(name), data_type)
             history = getattr(self, name, {}).get(data_type, [])
             if history:
                 return history[: - distance - 1:-1]

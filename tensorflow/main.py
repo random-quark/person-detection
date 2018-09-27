@@ -20,7 +20,7 @@ def visualise(img, people, scores, selected_person_name):
         cv2.circle(img, person["image_scaled_centroid"], 10, color, -1)
         textCoords = tuple(
             [pos - 10 for pos in person["image_scaled_centroid"]])
-        cv2.putText(img, name, (textCoords),
+        cv2.putText(img, person["name"], (textCoords),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
     cv2.putText(img, "Total people: {}".format(

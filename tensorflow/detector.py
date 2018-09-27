@@ -93,7 +93,7 @@ class DetectorAPI:
             else:
                 detection["health"] = config["allowed_tracking_loss_frames"]
                 detection["name"] = self.get_new_name()
-                self.people[uuid.uuid4()] = detection.copy()
+                self.people[str(uuid.uuid4())] = detection.copy()
 
         for person in self.people.values():
             person["health"] -= 1

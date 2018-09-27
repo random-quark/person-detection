@@ -11,8 +11,6 @@ import atexit
 import pickle
 import os
 
-from activity import Activity
-
 debug = True
 
 global data
@@ -38,7 +36,6 @@ class DetectorAPI:
 
     def __init__(self, relative_path_to_ckpt, threshold, allowed_movement_per_frame, allowed_tracking_loss_frames):
         self.data = load()  # get dummy data
-        self.activity = Activity()
 
         # FIXME: need better way of supplying infinite unique names
         self.names_source = ["Tom", "Simon", "Leslie", "John",
@@ -159,11 +156,9 @@ class DetectorAPI:
 
             detections.append(detection)
 
-        scores = self.activity.get(self.people.copy())
-
         self.track_people(detections)
 
-        return (self.people.copy(), scores)
+        return self.people.copy()
 
     def close(self):
         self.sess.close()

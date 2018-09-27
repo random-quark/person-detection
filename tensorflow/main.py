@@ -3,9 +3,11 @@ import argparse
 import numpy as np
 import tensorflow as tf
 import cv2
-import random
 import os
 from detector import DetectorAPI
+from activity import Activity
+
+from person_finder import PersonFinder
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
@@ -22,10 +24,12 @@ def visualise(img, people, scores):
         cv2.putText(img, name, (textCoords),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
-    cv2.putText(img, "Bounding box score: {}".format(
-        scores["box_score"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
-    cv2.putText(img, "Number people score: {}".format(
-        scores["people_score"]), (10, im_height - 50),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+    cv2.putText(img, "Total people: {}".format(
+        scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+    cv2.putText(img, "Avg num people: {}".format(
+        scores["average_number_people"]), (10, im_height - 50),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+    cv2.putText(img, "Deviation from avg: {}".format(
+        scores["activity_score"]), (10, im_height - 80),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -33,26 +37,6 @@ def visualise(img, people, scores):
     key = cv2.waitKey(1)
     if key & 0xFF == ord('q'):
         return
-
-
-# FIXME uses the name to identify people which is eventually recycled - use a unique ID?
-class PersonFinder:
-    def __init__(self):
-        self.track_for_frames = 50
-        self.selected_person = None
-        self.ttl = self.track_for_frames
-
-    def select(self, people):
-        self.selected_person = random.choice(list(people.keys()))
-        self.ttl = self.track_for_frames
-        return self.selected_person
-
-    def get(self, people):
-        if not self.selected_person or self.selected_person not in people or self.ttl <= 0:
-            return self.select(people)
-        else:
-            self.ttl -= 1
-            return self.selected_person
 
 
 if __name__ == "__main__":
@@ -76,20 +60,27 @@ if __name__ == "__main__":
     video_path = os.path.join(dirname, args.video)
     capture = cv2.VideoCapture(video_path)
     person_finder = PersonFinder()
+    activity = Activity()
 
     while True:
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))
         frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))
 
-        (people, scores) = odapi.processFrame(img, frame_number)
+        people = odapi.processFrame(img, frame_number)
+        scores = activity.update_and_get(people.copy())
         selected_person_name = person_finder.get(people)
 
-        for person in people.values():
-            client.send_message("/person/horizontal", person["centroid"][0])
-            client.send_message("/person/vertical", person["centroid"][1])
+        selected_person = people[selected_person_name]
+        client.send_message("/person/horizontal",
+                            selected_person["centroid"][0])
+        client.send_message("/person/vertical", selected_person["centroid"][1])
+        client.send_message('/people/total', scores["total_people"])
+        client.send_message('/average_number_people',
+                            scores["average_number_people"])
+        client.send_message('/activity_score', scores["activity_score"])
 
-        # FIXME: storing this on the object is bad because it mutates the objects passed by detection
+        # FIXME: storing this on the object is bad because it mutates the objects passed by detection. same as above fixme with name
         # FIXME write more functionally... or work out how to pass things around
         for key, person in people.items():
             person["selected"] = key == selected_person_name

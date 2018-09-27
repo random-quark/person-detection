@@ -72,10 +72,13 @@ if __name__ == "__main__":
         scores = activity.update_and_get(people.copy())
         selected_person_name = person_finder.get(people)
 
-        selected_person = people[selected_person_name]
-        client.send_message("/person/horizontal",
-                            selected_person["centroid"][0])
-        client.send_message("/person/vertical", selected_person["centroid"][1])
+        if selected_person_name:
+            selected_person = people[selected_person_name]
+            client.send_message("/person/horizontal",
+                                selected_person["centroid"][0])
+            client.send_message("/person/vertical",
+                                selected_person["centroid"][1])
+        visualise(img, people, scores, selected_person_name)
 
         client.send_message('/people/total', scores["total_people"])
         client.send_message('/average_number_people',
@@ -84,5 +87,3 @@ if __name__ == "__main__":
         if time.time() - last_activity_score_send_time > config["activity_score_send_interval"]:
             client.send_message('/activity_score', scores["activity_score"])
             last_activity_score_send_time = time.time()
-
-        visualise(img, people, scores, selected_person_name)

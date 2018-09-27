@@ -19,11 +19,12 @@ class PersonFinder:
         return self.activity.most_active_person(people)
 
     def get(self, people):
+        if not people:
+            return None
         if not self.selected_person or self.selected_person not in people or self.ttl <= 0:
             self.selected_person = self.select_random(
                 people) if random.random() > config["selection_type_ratio"] else self.select_active(people)
             self.ttl = self.track_for_frames
             return self.selected_person
-        else:
-            self.ttl -= 1
-            return self.selected_person
+        self.ttl -= 1
+        return self.selected_person

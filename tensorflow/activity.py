@@ -30,7 +30,6 @@ class Activity():
             getattr(self, name)[data_type].append(data)
 
         def get_history(self, name, data_type, distance):
-            print(type(name), data_type)
             history = getattr(self, name, {}).get(data_type, [])
             if history:
                 return history[: - distance - 1:-1]
@@ -64,12 +63,16 @@ class Activity():
                                   for person in people]
             return sorted(person_by_movement)[0][0]
 
+        def scale_score(self, average, score):
+            return max(min(score / average, 1), 0)
+
         # get the diff between now and rolling average
         def activity_score(self, people):
             current_number_of_people = len(people)
             self.previous_frames_queue.append(current_number_of_people)
             average_number_of_people = np.mean(self.previous_frames_queue)
-            return current_number_of_people - average_number_of_people
+            absolute_score = current_number_of_people - average_number_of_people
+            return self.scale_score(absolute_score, average_number_of_people)
 
         # get the average number of people over last n frames
         def average_number_of_people(self, people):

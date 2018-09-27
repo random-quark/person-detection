@@ -23,6 +23,9 @@ def visualise(img, people, scores, selected_person_name, frames_until_change):
         cv2.putText(img, person["name"], (text_coords),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
+    im_height, im_width, _ = img.shape
+    cv2.rectangle(img, (0, im_height - 135),
+                  (500, im_height), (255, 255, 255), -1)
     cv2.putText(img, "Total people: {}".format(
         scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
     cv2.putText(img, "Avg num people: {}".format(

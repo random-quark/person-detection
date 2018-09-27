@@ -24,6 +24,7 @@ config = {
     # 0 will always select a random person
     # 1 will always select the most active person
     # 0.5 means a 50% chance of random selection and 50% chance of selecting by activity
-    "selection_type_ratio": 0.5
+    "selection_type_ratio": 0.5,
 
+    "names_source": ["Tom", "Simon", "Leslie", "John", "Peter", "Ruby", "Sioban", "Ella", "Jane"]
 }

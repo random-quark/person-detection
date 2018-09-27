@@ -2,14 +2,13 @@
 # https://github.com/tensorflow/models/blob/master/research/object_detection/object_detection_tutorial.ipynb
 # Tensorflow Object Detection Detector
 
-import numpy as np
-import cv2
-import tensorflow as tf
-import time
+# import atexit
 import math
-import atexit
 import pickle
 import os
+import uuid
+import numpy as np
+import tensorflow as tf
 
 from config import config
 
@@ -36,14 +35,15 @@ class DetectorAPI:
     def mockDetection(self, frameIndex):
         return self.data[frameIndex]
 
+    def get_new_name(self):
+        if not self.names:
+            self.names = config["names_source"].copy()
+        return self.names.pop()
+
     def __init__(self, relative_path_to_ckpt):
         self.data = load()  # get dummy data
 
-        # FIXME: need better way of supplying infinite unique names
-        self.names_source = ["Tom", "Simon", "Leslie", "John",
-                             "Peter", "Ruby", "Sioban", "Ella", "Jane"]
-        self.names = self.names_source.copy()
-
+        self.names = []
         self.people = {}
 
         if not debug:
@@ -92,10 +92,8 @@ class DetectorAPI:
                             ]["health"] = config["allowed_tracking_loss_frames"]
             else:
                 detection["health"] = config["allowed_tracking_loss_frames"]
-                # FIXME: better solution for infinite source of names. counter?
-                if not self.names:
-                    self.names = self.names_source.copy()
-                self.people[self.names.pop()] = detection.copy()
+                detection["name"] = self.get_new_name()
+                self.people[uuid.uuid4()] = detection.copy()
 
         for person in self.people.values():
             person["health"] -= 1

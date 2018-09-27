@@ -1,7 +1,6 @@
 from collections import deque
 import math
 import numpy as np
-import itertools
 
 from config import config
 
@@ -22,16 +21,16 @@ class Activity():
                 maxlen=config["people_lookback_frames"])
 
         # DATA
-        def store_person_history(self, name, type, data):
-            # sets self[name][type].append(data)
+        def store_person_history(self, name, data_type, data):
+            """sets self[name][data_type].append(data)"""
             if not getattr(self, name, None):
                 setattr(self, name, {})
-            if not getattr(self, name).get(type, None):
-                getattr(self, name)[type] = []
-            getattr(self, name)[type].append(data)
+            if not getattr(self, name).get(data_type, None):
+                getattr(self, name)[data_type] = []
+            getattr(self, name)[data_type].append(data)
 
-        def get_history(self, name, type, distance):
-            history = getattr(self, name, {}).get(type, [])
+        def get_history(self, name, data_type, distance):
+            history = getattr(self, name, {}).get(data_type, [])
             if history:
                 return history[: - distance - 1:-1]
             return history
@@ -45,7 +44,7 @@ class Activity():
 
         def centroid_movement_for_person(self, name, person):
             centroids = self.get_history(name, 'centroids', 1)
-            if len(centroids) < 1:
+            if not centroids:
                 return
             prev_centroid = centroids[0]
             self.store_person_history(name, 'centroids', person['centroid'])

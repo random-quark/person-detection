@@ -11,11 +11,11 @@ from config import config
 from person_finder import PersonFinder
 
 
-def visualise(img, people, scores):
+def visualise(img, people, scores, selected_person_name):
     im_height, _, _ = img.shape
     for name, person in people.items():
         box = person["image_scaled_box"]
-        color = (0, 0, 255) if person.get("selected") else (0, 255, 0)
+        color = (0, 0, 255) if name == selected_person_name else (0, 255, 0)
         cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), color, 2)
         cv2.circle(img, person["image_scaled_centroid"], 10, color, -1)
         textCoords = tuple(
@@ -85,9 +85,4 @@ if __name__ == "__main__":
             client.send_message('/activity_score', scores["activity_score"])
             last_activity_score_send_time = time.time()
 
-        # FIXME: storing this on the object is bad because it mutates the objects passed by detection. same as above fixme with name
-        # FIXME write more functionally... or work out how to pass things around
-        for key, person in people.items():
-            person["selected"] = key == selected_person_name
-
-        visualise(img, people, scores)
+        visualise(img, people, scores, selected_person_name)

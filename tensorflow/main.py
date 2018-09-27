@@ -1,20 +1,18 @@
 import time
 import argparse
-import numpy as np
-import tensorflow as tf
-import cv2
 import os
+import cv2
+from pythonosc import udp_client
 from detector import DetectorAPI
 from activity import Activity
+
 from config import config
 
 from person_finder import PersonFinder
-from pythonosc import osc_message_builder
-from pythonosc import udp_client
 
 
 def visualise(img, people, scores):
-    im_height, im_width, _ = img.shape
+    im_height, _, _ = img.shape
     for name, person in people.items():
         box = person["image_scaled_box"]
         color = (0, 0, 255) if person.get("selected") else (0, 255, 0)
@@ -28,12 +26,13 @@ def visualise(img, people, scores):
     cv2.putText(img, "Total people: {}".format(
         scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
     cv2.putText(img, "Avg num people: {}".format(
-        scores["average_number_people"]), (10, im_height - 50),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+        scores["average_number_people"]), (10, im_height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
     cv2.putText(img, "Deviation from avg: {}".format(
-        scores["activity_score"]), (10, im_height - 80),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+        scores["activity_score"]), (10, im_height - 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
+
     # FIXME this probably shouldnt be here, but capture doesnt work without it
     key = cv2.waitKey(1)
     if key & 0xFF == ord('q'):
@@ -54,8 +53,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = udp_client.SimpleUDPClient(args.ip, args.port)
-    odapi = DetectorAPI(relative_path_to_ckpt=args.model,
-                        threshold=args.threshold, allowed_movement_per_frame=5, allowed_tracking_loss_frames=10)
+    odapi = DetectorAPI(relative_path_to_ckpt=args.model)
 
     dirname = os.path.dirname(__file__)
     video_path = os.path.join(dirname, args.video)

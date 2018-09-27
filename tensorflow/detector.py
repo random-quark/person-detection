@@ -3,17 +3,19 @@
 # Tensorflow Object Detection Detector
 
 import numpy as np
-import tensorflow as tf
 import cv2
+import tensorflow as tf
 import time
 import math
 import atexit
 import pickle
 import os
 
+from config import config
+
 debug = True
 
-global data
+data = []
 
 # def exit_handler():
 #     with open('data_cache.pickle', 'wb') as file:
@@ -34,7 +36,7 @@ class DetectorAPI:
     def mockDetection(self, frameIndex):
         return self.data[frameIndex]
 
-    def __init__(self, relative_path_to_ckpt, threshold, allowed_movement_per_frame, allowed_tracking_loss_frames):
+    def __init__(self, relative_path_to_ckpt):
         self.data = load()  # get dummy data
 
         # FIXME: need better way of supplying infinite unique names
@@ -43,10 +45,6 @@ class DetectorAPI:
         self.names = self.names_source.copy()
 
         self.people = {}
-        self.allowed_movement_per_frame = allowed_movement_per_frame
-        self.allowed_tracking_loss_frames = allowed_tracking_loss_frames
-
-        self.threshold = threshold
 
         if not debug:
             self.detection_graph = tf.Graph()
@@ -77,7 +75,7 @@ class DetectorAPI:
             x, y = detection["centroid"]
 
             matches = [key for key, person in self.people.items() if math.hypot(
-                person["centroid"][0] - x, person["centroid"][1] - y) < self.allowed_movement_per_frame]
+                person["centroid"][0] - x, person["centroid"][1] - y) < config["allowed_movement_per_frame"]]
             distances = [math.hypot(self.people[name]["centroid"][0] - x,
                                     self.people[name]["centroid"][0] - y) for name in matches]
 
@@ -91,9 +89,9 @@ class DetectorAPI:
                 self.people[matches[0]
                             ]["image_scaled_centroid"] = detection["image_scaled_centroid"]
                 self.people[matches[0]
-                            ]["health"] = self.allowed_tracking_loss_frames
+                            ]["health"] = config["allowed_tracking_loss_frames"]
             else:
-                detection["health"] = self.allowed_tracking_loss_frames
+                detection["health"] = config["allowed_tracking_loss_frames"]
                 # FIXME: better solution for infinite source of names. counter?
                 if not self.names:
                     self.names = self.names_source.copy()
@@ -109,6 +107,7 @@ class DetectorAPI:
         return
 
     def machine_learning_data(self, image):
+        global data
         image_np_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes) = self.sess.run(
             [self.detection_boxes, self.detection_scores,
@@ -145,7 +144,7 @@ class DetectorAPI:
 
             centroid = (np.mean([pt2, pt4]), np.mean([pt1, pt3]))
 
-            if (scores[i] < self.threshold or classes[i] != 1):
+            if (scores[i] < config["threshold"] or classes[i] != 1):
                 continue
 
             detection = {

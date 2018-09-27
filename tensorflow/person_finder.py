@@ -7,7 +7,7 @@ from config import config
 
 class PersonFinder:
     def __init__(self):
-        self.track_for_frames = 50  # FIXME: move to config
+        self.track_for_frames = config["person_tracking_period"]
         self.selected_person = None
         self.ttl = self.track_for_frames
         self.activity = Activity()

@@ -9,6 +9,11 @@ import time
 import math
 import atexit
 import pickle
+import os
+
+from activity import Activity
+
+debug = True
 
 global data
 
@@ -21,7 +26,9 @@ global data
 
 
 def load():
-    with open('data_cache.pickle', 'rb') as file:
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, 'data_cache.pickle')
+    with open(filename, 'rb') as file:
         return pickle.load(file)
 
 
@@ -29,9 +36,11 @@ class DetectorAPI:
     def mockDetection(self, frameIndex):
         return self.data[frameIndex]
 
-    def __init__(self, path_to_ckpt, threshold, allowed_movement_per_frame, allowed_tracking_loss_frames):
+    def __init__(self, relative_path_to_ckpt, threshold, allowed_movement_per_frame, allowed_tracking_loss_frames):
         self.data = load()  # get dummy data
+        self.activity = Activity()
 
+        # FIXME: need better way of supplying infinite unique names
         self.names_source = ["Tom", "Simon", "Leslie", "John",
                              "Peter", "Ruby", "Sioban", "Ella", "Jane"]
         self.names = self.names_source.copy()
@@ -41,27 +50,29 @@ class DetectorAPI:
         self.allowed_tracking_loss_frames = allowed_tracking_loss_frames
 
         self.threshold = threshold
-        self.detection_graph = tf.Graph()
-        with self.detection_graph.as_default():
-            od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile(path_to_ckpt, 'rb') as fid:
-                serialized_graph = fid.read()
-                od_graph_def.ParseFromString(serialized_graph)
-                tf.import_graph_def(od_graph_def, name='')
 
-        self.default_graph = self.detection_graph.as_default()
-        self.sess = tf.Session(graph=self.detection_graph)
+        if not debug:
+            self.detection_graph = tf.Graph()
+            with self.detection_graph.as_default():
+                od_graph_def = tf.GraphDef()
+                dirname = os.path.dirname(__file__)
+                path_to_ckpt = os.path.join(dirname, relative_path_to_ckpt)
+                with tf.gfile.GFile(path_to_ckpt, 'rb') as fid:
+                    serialized_graph = fid.read()
+                    od_graph_def.ParseFromString(serialized_graph)
+                    tf.import_graph_def(od_graph_def, name='')
 
-        self.image_tensor = self.detection_graph.get_tensor_by_name(
-            'image_tensor:0')
-        self.detection_boxes = self.detection_graph.get_tensor_by_name(
-            'detection_boxes:0')
-        self.detection_scores = self.detection_graph.get_tensor_by_name(
-            'detection_scores:0')
-        self.detection_classes = self.detection_graph.get_tensor_by_name(
-            'detection_classes:0')
-        self.num_detections = self.detection_graph.get_tensor_by_name(
-            'num_detections:0')
+            self.default_graph = self.detection_graph.as_default()
+            self.sess = tf.Session(graph=self.detection_graph)
+
+            self.image_tensor = self.detection_graph.get_tensor_by_name(
+                'image_tensor:0')
+            self.detection_boxes = self.detection_graph.get_tensor_by_name(
+                'detection_boxes:0')
+            self.detection_scores = self.detection_graph.get_tensor_by_name(
+                'detection_scores:0')
+            self.detection_classes = self.detection_graph.get_tensor_by_name(
+                'detection_classes:0')
 
     def track_people(self, detections):
         # FIXME break up into smaller functions
@@ -100,16 +111,23 @@ class DetectorAPI:
 
         return
 
-    def processFrame(self, image, frame=0):
-        # image_np_expanded = np.expand_dims(image, axis=0)
-        # (boxes, scores, classes, num) = self.sess.run(
-        #     [self.detection_boxes, self.detection_scores,
-        #         self.detection_classes, self.num_detections],
-        #     feed_dict={self.image_tensor: image_np_expanded})
-        # data.append((boxes, scores, classes, num))  # collect data
+    def machine_learning_data(self, image):
+        image_np_expanded = np.expand_dims(image, axis=0)
+        (boxes, scores, classes) = self.sess.run(
+            [self.detection_boxes, self.detection_scores,
+                self.detection_classes],
+            feed_dict={self.image_tensor: image_np_expanded})
+        data.append((boxes, scores, classes))  # collect data
+        return (boxes, scores, classes)
 
-        (boxes, scores, classes, num) = self.mockDetection(
+    def cached_data(self, frame):
+        (boxes, scores, classes, _) = self.mockDetection(
             frame)  # fast for testing
+        return (boxes, scores, classes)
+
+    def processFrame(self, image, frame=0):
+        (boxes, scores, classes) = self.cached_data(
+            frame) if debug else self.machine_learning_data(image)
 
         im_height, im_width, _ = image.shape
 
@@ -141,12 +159,11 @@ class DetectorAPI:
 
             detections.append(detection)
 
+        scores = self.activity.get(self.people.copy())
+
         self.track_people(detections)
 
-        # TODO select a random person on timer
-        # TODO return coords of the selected person
-
-        return self.people
+        return (self.people.copy(), scores)
 
     def close(self):
         self.sess.close()

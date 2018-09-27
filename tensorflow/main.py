@@ -4,12 +4,14 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import random
+import os
 from detector import DetectorAPI
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
 
-def visualise(img, people):
+def visualise(img, people, scores):
+    im_height, im_width, _ = img.shape
     for name, person in people.items():
         box = person["image_scaled_box"]
         color = (0, 0, 255) if person.get("selected") else (0, 255, 0)
@@ -18,7 +20,12 @@ def visualise(img, people):
         textCoords = tuple(
             [pos - 10 for pos in person["image_scaled_centroid"]])
         cv2.putText(img, name, (textCoords),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, color, )
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, color)
+
+    cv2.putText(img, "Bounding box score: {}".format(
+        scores["box_score"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+    cv2.putText(img, "Number people score: {}".format(
+        scores["people_score"]), (10, im_height - 50),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -41,8 +48,6 @@ class PersonFinder:
         return self.selected_person
 
     def get(self, people):
-        print(not self.selected_person,
-              self.selected_person not in people, self.ttl <= 0)
         if not self.selected_person or self.selected_person not in people or self.ttl <= 0:
             return self.select(people)
         else:
@@ -64,9 +69,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     client = udp_client.SimpleUDPClient(args.ip, args.port)
-    odapi = DetectorAPI(path_to_ckpt=args.model,
+    odapi = DetectorAPI(relative_path_to_ckpt=args.model,
                         threshold=args.threshold, allowed_movement_per_frame=5, allowed_tracking_loss_frames=10)
-    capture = cv2.VideoCapture(args.video)
+
+    dirname = os.path.dirname(__file__)
+    video_path = os.path.join(dirname, args.video)
+    capture = cv2.VideoCapture(video_path)
     person_finder = PersonFinder()
 
     while True:
@@ -74,16 +82,16 @@ if __name__ == "__main__":
         img = cv2.resize(img, (1280, 720))
         frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))
 
-        people = odapi.processFrame(img, frame_number)
+        (people, scores) = odapi.processFrame(img, frame_number)
         selected_person_name = person_finder.get(people)
 
         for person in people.values():
             client.send_message("/person/horizontal", person["centroid"][0])
             client.send_message("/person/vertical", person["centroid"][1])
 
-# FIXME: storing this on the object is bad because it mutates the objects passed by detection
-# FIXME write more functionally... or work out how to pass things around
+        # FIXME: storing this on the object is bad because it mutates the objects passed by detection
+        # FIXME write more functionally... or work out how to pass things around
         for key, person in people.items():
             person["selected"] = key == selected_person_name
 
-        visualise(img, people)
+        visualise(img, people, scores)

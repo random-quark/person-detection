@@ -18,10 +18,6 @@ class PersonFinder:
 
     def get(self, people):
         frames_until_change = self.ttl
-        print("---")
-        print(config["person_tracking_period"])
-        print(self.ttl)
-        print(frames_until_change)
         if not people:
             return {
                 "selected_person": None,

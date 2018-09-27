@@ -63,16 +63,19 @@ class Activity():
                                   for person in people]
             return sorted(person_by_movement)[0][0]
 
-        def scale_score(self, average, score):
-            return max(min(score / average, 1), 0)
+        def scale_score(self, score, average):
+            return max(min(score / average, 1.0), 0.0) * 100.0
 
         # get the diff between now and rolling average
         def activity_score(self, people):
             current_number_of_people = len(people)
             self.previous_frames_queue.append(current_number_of_people)
+
             average_number_of_people = np.mean(self.previous_frames_queue)
-            absolute_score = current_number_of_people - average_number_of_people
-            return self.scale_score(absolute_score, average_number_of_people)
+
+            diff_from_avg = current_number_of_people - average_number_of_people
+
+            return self.scale_score(diff_from_avg, average_number_of_people)
 
         # get the average number of people over last n frames
         def average_number_of_people(self, people):

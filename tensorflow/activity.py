@@ -3,6 +3,8 @@ import math
 import numpy as np
 import itertools
 
+from config import config
+
 
 class Activity():
     instance = None
@@ -16,8 +18,8 @@ class Activity():
 
     class __Activity():
         def __init__(self):
-            average_buffer = 60  # TODO: move this into a config easy for user to set
-            self.previous_frames_queue = deque(maxlen=average_buffer)
+            self.previous_frames_queue = deque(
+                maxlen=config["people_lookback_frames"])
 
         # DATA
         def store_person_history(self, name, type, data):
@@ -25,16 +27,13 @@ class Activity():
             if not getattr(self, name, None):
                 setattr(self, name, {})
             if not getattr(self, name).get(type, None):
-                getattr(self, name)[type] = deque(
-                    maxlen=60)  # TODO put this in config
+                getattr(self, name)[type] = []
             getattr(self, name)[type].append(data)
 
         def get_history(self, name, type, distance):
             history = getattr(self, name, {}).get(type, [])
             if history:
-                print("his", list(history)[: - distance - 1:-1])
-                return list(history)[: - distance - 1:-1]
-                # return list(itertools.islice(None, -distance - 1, -1))
+                return history[: - distance - 1:-1]
             return history
 
         # CACLULATIONS
@@ -57,14 +56,12 @@ class Activity():
                 name, 'centroid_movements', centroid_movement)
 
         def cumulative_movement(self, name):
-            activity_frame_count = 60
-            return sum(self.get_history(name, 'centroid_movements', activity_frame_count))
+            return sum(self.get_history(name, 'centroid_movements', config["movement_lookback_frames"]))
 
         # SCENE TOTALS
         def most_active_person(self, people):
             person_by_movement = [(person, self.cumulative_movement(person))
                                   for person in people]
-            print('by move', sorted(person_by_movement)[0][0])
             return sorted(person_by_movement)[0][0]
 
         # get the diff between now and rolling average

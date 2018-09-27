@@ -6,6 +6,7 @@ import cv2
 import os
 from detector import DetectorAPI
 from activity import Activity
+from config import config
 
 from person_finder import PersonFinder
 from pythonosc import osc_message_builder
@@ -78,10 +79,11 @@ if __name__ == "__main__":
                             selected_person["centroid"][0])
         client.send_message("/person/vertical", selected_person["centroid"][1])
 
-        if time.time() - last_activity_score_send_time > 5:  # TODO put in config
-            client.send_message('/people/total', scores["total_people"])
-            client.send_message('/average_number_people',
-                                scores["average_number_people"])
+        client.send_message('/people/total', scores["total_people"])
+        client.send_message('/average_number_people',
+                            scores["average_number_people"])
+
+        if time.time() - last_activity_score_send_time > config["activity_score_send_interval"]:
             client.send_message('/activity_score', scores["activity_score"])
             last_activity_score_send_time = time.time()
 

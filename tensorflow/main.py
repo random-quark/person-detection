@@ -1,4 +1,4 @@
-
+import time
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -62,6 +62,8 @@ if __name__ == "__main__":
     person_finder = PersonFinder()
     activity = Activity()
 
+    last_activity_score_send_time = time.time()
+
     while True:
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))
@@ -75,10 +77,13 @@ if __name__ == "__main__":
         client.send_message("/person/horizontal",
                             selected_person["centroid"][0])
         client.send_message("/person/vertical", selected_person["centroid"][1])
-        client.send_message('/people/total', scores["total_people"])
-        client.send_message('/average_number_people',
-                            scores["average_number_people"])
-        client.send_message('/activity_score', scores["activity_score"])
+
+        if time.time() - last_activity_score_send_time > 5:  # TODO put in config
+            client.send_message('/people/total', scores["total_people"])
+            client.send_message('/average_number_people',
+                                scores["average_number_people"])
+            client.send_message('/activity_score', scores["activity_score"])
+            last_activity_score_send_time = time.time()
 
         # FIXME: storing this on the object is bad because it mutates the objects passed by detection. same as above fixme with name
         # FIXME write more functionally... or work out how to pass things around

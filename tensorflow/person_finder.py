@@ -21,7 +21,7 @@ class PersonFinder:
         if not self.selected_person or self.selected_person not in people or self.ttl <= 0:
             # FIXME should be 0.5 make in config
             self.selected_person = self.select_random(
-                people) if random.random() > 1 else self.select_active(people)
+                people) if random.random() > 0.5 else self.select_active(people)
             self.ttl = self.track_for_frames
             return self.selected_person
         else:

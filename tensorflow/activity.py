@@ -23,38 +23,38 @@ class Activity():
         self.centroid_movements = {}
         return
 
-    def store_person_history(self, name, type, data):
-        if not self.centroids[name]:
-            setattr(self, type, deque(maxlen=60))
-        getattr(name, type).append(data)
+    # def store_person_history(self, name, type, data):
+    #     if not self.centroids[name]:
+    #         setattr(self, type, deque(maxlen=60))
+    #     getattr(name, type).append(data)
 
-    def get_latest_history(self, name, type, distance):
-        getattr(name, type)[:-distance-1:-1]
+    # def get_history(self, name, type, distance):
+    #     getattr(name, type)[:-distance-1:-1]
 
-    def calculate_centroid_movement(self, centroid, prev_centroid):
-        x, y = centroid
-        prevX, prevY = prev_centroid
-        movement_since_last_frame = math.hypot(x - prevX, y - prevY)
-        return movement_since_last_frame
+    # def calculate_centroid_movement(self, centroid, prev_centroid):
+    #     x, y = centroid
+    #     prevX, prevY = prev_centroid
+    #     movement_since_last_frame = math.hypot(x - prevX, y - prevY)
+    #     return movement_since_last_frame
 
-    def centroid_movement_for_person(self, name, person):
-        store_person_history(name, 'centroids', person['centroid'])
-        centroid_movement = self.calculate_centroid_movement(
-                person["centroid"], get_latest_history(name, 'centroids'))
-        store_person_history(name, 'centroids', person['centroid'])
-        store_person_history(name, 'centroid_movements', centroid_movements])
-        return
+    # def centroid_movement_for_person(self, name, person):
+    #     store_person_history(name, 'centroids', person['centroid'])
+    #     centroid_movement = self.calculate_centroid_movement(
+    #             person["centroid"], get_history(name, 'centroids'))
+    #     store_person_history(name, 'centroids', person['centroid'])
+    #     store_person_history(name, 'centroid_movements', centroid_movements])
+    #     return
 
-    def frame_difference_for_person(self, img, prev_image, person):
-        # store frame diff from frame to frame
-        return
+    # def frame_difference_for_person(self, img, prev_image, person):
+    #     # store frame diff from frame to frame
+    #     return
 
     def box_perimeter(self, box):
-        perimeter= (box[2] - box[0]) * 2 + (box[3] - box[1]) * 2
+        perimeter = (box[2] - box[0]) * 2 + (box[3] - box[1]) * 2
         return perimeter
 
     def box_area(self, box):
-        area= (box[2] - box[0]) * (box[3] - box[1])
+        area = (box[2] - box[0]) * (box[3] - box[1])
         return area
 
     def box_movement_per_person(self, person):
@@ -68,14 +68,14 @@ class Activity():
         }
 
     def cumulative_movement(self, name, num_frames):
-        return sum()
+        return sum(get_history(name, num_frames))
 
     # SCENE AVERAGES
     def most_active_person(self, people):
         sorted([(person, cumulative_movement(person))
-               for person in people], key=lambda person: person[1])[0]
+                for person in people], key=lambda person: person[1])[0]
 
-    def movement_activity(self):
+    def movement_activity_in_scene(self):
         return sum([cumulative_movement(person, 100) for person in people]) - sum([cumulative_movement(person, 10) for person in people])
 
     # get the diff between now and rolling average

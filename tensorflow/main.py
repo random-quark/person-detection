@@ -11,16 +11,16 @@ from config import config
 from person_finder import PersonFinder
 
 
-def visualise(img, people, scores, selected_person_name):
+def visualise(img, people, scores, selected_person_name, frames_until_change):
     im_height, _, _ = img.shape
     for name, person in people.items():
         box = person["image_scaled_box"]
         color = (0, 0, 255) if name == selected_person_name else (0, 255, 0)
         cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), color, 2)
         cv2.circle(img, person["image_scaled_centroid"], 10, color, -1)
-        textCoords = tuple(
+        text_coords = tuple(
             [pos - 10 for pos in person["image_scaled_centroid"]])
-        cv2.putText(img, person["name"], (textCoords),
+        cv2.putText(img, person["name"], (text_coords),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
     cv2.putText(img, "Total people: {}".format(
@@ -29,6 +29,8 @@ def visualise(img, people, scores, selected_person_name):
         scores["average_number_people"]), (10, im_height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
     cv2.putText(img, "Deviation from avg: {}".format(
         scores["activity_score"]), (10, im_height - 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+    cv2.putText(img, "Next person chosen in: {}".format(
+        frames_until_change), (10, im_height - 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -64,7 +66,8 @@ if __name__ == "__main__":
 
         people = odapi.processFrame(img, frame_number)
         scores = activity.update_and_get(people.copy())
-        selected_person_name = person_finder.get(people)
+        person_find_results = person_finder.get(people)
+        selected_person_name = person_find_results["selected_person"]
 
         if selected_person_name:
             selected_person = people[selected_person_name]
@@ -72,7 +75,9 @@ if __name__ == "__main__":
                                 selected_person["centroid"][0])
             client.send_message("/person/vertical",
                                 selected_person["centroid"][1])
-        visualise(img, people, scores, selected_person_name)
+
+        visualise(img, people, scores, selected_person_name,
+                  person_find_results["frames_until_change"])
 
         client.send_message('/people/total', scores["total_people"])
         client.send_message('/average_number_people',

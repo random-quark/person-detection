@@ -25,4 +25,7 @@ class PersonFinder:
             self.ttl = self.track_for_frames
             return self.selected_person
         self.ttl -= 1
-        return self.selected_person
+        return {
+            "frames_until_change": config["person_tracking_period"] - self.ttl
+            "selected_person": self.selected_person
+        }

@@ -21,16 +21,16 @@ class Activity():
                 maxlen=config["people_lookback_frames"])
 
         # DATA
-        def store_person_history(self, name, data_type, data):
-            """sets self[name][data_type].append(data)"""
-            if not getattr(self, name, None):
-                setattr(self, name, {})
-            if not getattr(self, name).get(data_type, None):
-                getattr(self, name)[data_type] = []
-            getattr(self, name)[data_type].append(data)
+        def store_person_history(self, person_id, data_type, data):
+            """sets self[person_id][data_type].append(data)"""
+            if not getattr(self, person_id, None):
+                setattr(self, person_id, {})
+            if not getattr(self, person_id).get(data_type, None):
+                getattr(self, person_id)[data_type] = []
+            getattr(self, person_id)[data_type].append(data)
 
-        def get_history(self, name, data_type, distance):
-            history = getattr(self, name, {}).get(data_type, [])
+        def get_history(self, person_id, data_type, distance):
+            history = getattr(self, person_id, {}).get(data_type, [])
             if history:
                 return history[: - distance - 1:-1]
             return history
@@ -42,20 +42,20 @@ class Activity():
             movement_since_last_frame = math.hypot(x - prevX, y - prevY)
             return movement_since_last_frame
 
-        def centroid_movement_for_person(self, name, person):
-            centroids = self.get_history(name, 'centroids', 1)
+        def centroid_movement_for_person(self, person_id, person):
+            centroids = self.get_history(person_id, 'centroids', 1)
+            self.store_person_history(person_id, 'centroids', person['centroid'])
             if not centroids:
                 return
             prev_centroid = centroids[0]
-            self.store_person_history(name, 'centroids', person['centroid'])
             centroid_movement = self.calculate_centroid_movement(
                 person['centroid'], prev_centroid)
-            self.store_person_history(name, 'centroids', person['centroid'])
+            self.store_person_history(person_id, 'centroids', person['centroid'])
             self.store_person_history(
-                name, 'centroid_movements', centroid_movement)
+                person_id, 'centroid_movements', centroid_movement)
 
-        def cumulative_movement(self, name):
-            return sum(self.get_history(name, 'centroid_movements', config["movement_lookback_frames"]))
+        def cumulative_movement(self, person_id):
+            return sum(self.get_history(person_id, 'centroid_movements', config["movement_lookback_frames"]))
 
         # SCENE TOTALS
         def most_active_person(self, people):
@@ -86,13 +86,17 @@ class Activity():
             average_number_of_people = np.mean(self.previous_frames_queue)
             return average_number_of_people
 
+        def total_movement_score(self, people):
+            return sum([self.cumulative_movement(person) for person in people])
+
         # EXTERNAL FUNCTIONS
         def update_and_get(self, people):
-            for name, person in people.items():
-                self.centroid_movement_for_person(name, person)
+            for person_id, person in people.items():
+                self.centroid_movement_for_person(person_id, person)
 
             return {
                 "total_people": len(people),
                 "average_number_people": self.average_number_of_people(people),
-                "activity_score": self.activity_score(people)
+                "activity_score": self.activity_score(people),
+                "movement_score": self.total_movement_score(people)
             }

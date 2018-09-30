@@ -24,8 +24,8 @@ def visualise(img, people, scores, selected_person_name, frames_until_change):
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
     im_height, im_width, _ = img.shape
-    cv2.rectangle(img, (0, im_height - 135),
-                  (500, im_height), (255, 255, 255), -1)
+    # cv2.rectangle(img, (0, im_height - 135),
+    #               (500, im_height), (255, 255, 255), -1)
     white = (255,255,255)
     cv2.putText(img, "Total people: {}".format(
         scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
@@ -33,8 +33,10 @@ def visualise(img, people, scores, selected_person_name, frames_until_change):
         scores["average_number_people"]), (10, im_height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
     cv2.putText(img, "Activity score: {}".format(
         scores["activity_score"]), (10, im_height - 80), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
+    cv2.putText(img, "Movement score: {}".format(
+        scores["movement_score"]), (10, im_height - 110), cv2.FONT_HERSHEY_SIMPLEX, 1, white)        
     cv2.putText(img, "Next person chosen in: {}".format(
-        frames_until_change), (10, im_height - 110), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
+        frames_until_change), (10, im_height - 140), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)

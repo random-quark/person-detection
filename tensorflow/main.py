@@ -51,7 +51,6 @@ if __name__ == "__main__":
 
     # dirname = os.path.dirname(__file__)
     # video_path = os.path.join(dirname, args.video)
-
     capture = cv2.VideoCapture(config["video_source"])
     person_finder = PersonFinder()
     activity = Activity()
@@ -61,7 +60,7 @@ if __name__ == "__main__":
     while True:
         if not capture.isOpened():
             print("ERROR: camera or video selected not available")
-            continue
+            break
 
         r, img = capture.read()
         img = cv2.resize(img, (1280, 720))

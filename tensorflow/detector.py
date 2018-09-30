@@ -12,7 +12,7 @@ import tensorflow as tf
 
 from config import config
 
-debug = True
+debug = False
 
 data = []
 

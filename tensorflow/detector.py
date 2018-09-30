@@ -146,9 +146,10 @@ class DetectorAPI:
                 continue
 
             detection = {
-                "centroid": (int(centroid[0] * 100), int(centroid[1] * 100)),
+                "centroid": (centroid[0] * 100, centroid[1] * 100),
                 "image_scaled_box": [int(x) for x in (pt2scaled, pt1scaled, pt4scaled, pt3scaled)],
-                "image_scaled_centroid": (int(centroid[0] * im_width), int(centroid[1] * im_height))
+                "image_scaled_centroid": (int(centroid[0] * im_width), int(centroid[1] * im_height)),
+                "confidence": scores[i]
             }
 
             detections.append(detection)

@@ -65,7 +65,7 @@ class Activity():
 
         def scale_score(self, score, average):
             if not average and score > 0: return 100.0
-            if not average: return 0
+            if not average: return 0.0
             return max(min(score / average, 1.0), 0.0) * 100.0
 
         # get the diff between now and rolling average

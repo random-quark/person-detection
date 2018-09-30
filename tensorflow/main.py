@@ -20,20 +20,21 @@ def visualise(img, people, scores, selected_person_name, frames_until_change):
         cv2.circle(img, person["image_scaled_centroid"], 10, color, -1)
         text_coords = tuple(
             [pos - 10 for pos in person["image_scaled_centroid"]])
-        cv2.putText(img, person["name"], (text_coords),
+        cv2.putText(img, person["name"] + " " + str(person["confidence"]), (text_coords),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, color)
 
     im_height, im_width, _ = img.shape
     cv2.rectangle(img, (0, im_height - 135),
                   (500, im_height), (255, 255, 255), -1)
+    white = (255,255,255)
     cv2.putText(img, "Total people: {}".format(
-        scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+        scores["total_people"]), (10, im_height - 20), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
     cv2.putText(img, "Avg num people: {}".format(
-        scores["average_number_people"]), (10, im_height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
-    cv2.putText(img, "Deviation from avg: {}".format(
-        scores["activity_score"]), (10, im_height - 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+        scores["average_number_people"]), (10, im_height - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
+    cv2.putText(img, "Activity score: {}".format(
+        scores["activity_score"]), (10, im_height - 80), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
     cv2.putText(img, "Next person chosen in: {}".format(
-        frames_until_change), (10, im_height - 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0))
+        frames_until_change), (10, im_height - 110), cv2.FONT_HERSHEY_SIMPLEX, 1, white)
 
     cv2.imshow("preview", img)
     cv2.moveWindow("preview", 0, 0)
@@ -49,8 +50,6 @@ if __name__ == "__main__":
         config["osc_server_ip"], config["osc_server_port"])
     odapi = DetectorAPI(relative_path_to_ckpt=config["model_path"])
 
-    # dirname = os.path.dirname(__file__)
-    # video_path = os.path.join(dirname, args.video)
     capture = cv2.VideoCapture(config["video_source"])
     person_finder = PersonFinder()
     activity = Activity()
@@ -63,7 +62,6 @@ if __name__ == "__main__":
             break
 
         r, img = capture.read()
-        img = cv2.resize(img, (1280, 720))
         frame_number = int(capture.get(cv2.CAP_PROP_POS_FRAMES))
 
         people = odapi.processFrame(img, frame_number)
@@ -72,7 +70,7 @@ if __name__ == "__main__":
         selected_person_name = person_find_results["selected_person"]
 
         if selected_person_name:
-            selected_person = people[selected_person_name]
+            selected_person = people[selected_person_name]   
             client.send_message("/person/horizontal",
                                 selected_person["centroid"][0])
             client.send_message("/person/vertical",
@@ -85,6 +83,4 @@ if __name__ == "__main__":
         client.send_message('/average_number_people',
                             scores["average_number_people"])
 
-        if time.time() - last_activity_score_send_time > config["activity_score_send_interval"]:
-            client.send_message('/activity_score', scores["activity_score"])
-            last_activity_score_send_time = time.time()
+        client.send_message('/activity_score', scores["activity_score"])

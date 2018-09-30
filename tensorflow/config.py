@@ -15,7 +15,7 @@ config = {
 
     #  DETECTION STUFF
     # range: 0-1. The confidence of the detection algorithm that the detection is a person
-    "threshold": 0.8,
+    "threshold": 0.5,
 
     # the percentage of vertical or horizontal screenspace a person's centroid can move in 1 frame before they become a new person
     "allowed_movement_per_frame": 10,

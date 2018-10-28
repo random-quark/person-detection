@@ -4,7 +4,7 @@ config = {
     # "video_source": "../sample_videos/park_day_short.mov",
    # "video_source": "rtsp://admin:mrgooby@192.168.1.71:555/h264Preview_01_main",
    # not 554 its 555 for this particular cam!!!
-    "video_source": 0,
+    "video_source": "./video/person.mp4",
 
     # where the model is stored for the algorithm. DO NOT CHANGE UNLESS CHANGING MODEL
     "model_path": "./models/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb",

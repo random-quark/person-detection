@@ -52,11 +52,14 @@ if __name__ == "__main__":
         config["osc_server_ip"], config["osc_server_port"])
     odapi = DetectorAPI(relative_path_to_ckpt=config["model_path"])
 
+    print(config["video_source"])
     capture = cv2.VideoCapture(config["video_source"])
     person_finder = PersonFinder()
     activity = Activity()
 
     last_activity_score_send_time = time.time()
+
+    print("APP STARTED")
 
     while True:
         if not capture.isOpened():

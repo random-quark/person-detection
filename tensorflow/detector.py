@@ -142,6 +142,11 @@ class DetectorAPI:
 
             centroid = (np.mean([pt2, pt4]), np.mean([pt1, pt3]))
 
+            # from 0-1. subtract the ys from each other
+            height = abs(pt3 - pt1)
+            # move head up
+            centroid = (centroid[0], centroid[1] - height * 0.4)
+
             if (scores[i] < config["threshold"] or classes[i] != 1):
                 continue
 
